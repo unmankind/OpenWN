@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter {{ chapter_index + 1 }}</title>
+    <!-- Link to external stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Chapter {{ chapter_index + 1 }}</h1>
+        </header>
+
+        <section class="chapter-content">
+            <div class="chapter-text">
+                <!-- Use the 'nl2br' filter to convert newlines into HTML line breaks for better formatting -->
+                <p>{{ chapter['chapter_text'] | nl2br | safe }}</p>
+            </div>
+        </section>
+
+        <section class="chapter-navigation">
+            <div class="navigation-buttons">
+                {% if prev_chapter_index is not none %}
+                    <a class="button" href="{{ url_for('show_chapter', chapter_index=prev_chapter_index) }}">Previous Chapter</a>
+                {% endif %}
+                
+                {% if next_chapter_index is not none %}
+                    <a class="button" href="{{ url_for('show_chapter', chapter_index=next_chapter_index) }}">Next Chapter</a>
+                {% endif %}
+            </div>
+
+            {% if is_latest_chapter %}
+                <form action="{{ url_for('next_chapter') }}" method="POST" class="generate-next-chapter-form">
+                    <button type="submit" class="button">Generate Next Chapter</button>
+                </form>
+            {% endif %}
+        </section>
+
+        <footer>
+            <a class="back-to-index" href="{{ url_for('index') }}">Back to Chapter List</a>
+        </footer>
+    </div>
+</body>
+</html>
