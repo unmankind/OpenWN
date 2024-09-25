@@ -26,6 +26,15 @@ logging.basicConfig(level=logging.DEBUG)
 def initialize_memory():
     """Ensure that memory.json exists and has the correct structure."""
     initial_memory = {
+            "skeleton": {
+            "Setting": "",
+            "EarthShatteringEvent": "",
+            "Protagonist": {
+                "Description": "",
+                "Motivation": "",
+                "PowerPath": []
+            }
+        },
         "Characters": [],
         "PlotProgression": {
             "mainGoal": "",
@@ -224,17 +233,91 @@ def summarize_chapter(chapter_text):
     return summary
 
 
+#Generate the skeleton of the story
+def generate_skeleton():
+    """
+    Generate the skeleton of the story, including setting, Earth-shattering event, and protagonist details.
+    """
+    skeleton_prompt = """
+    Generate the skeleton for a fantasy adventure story in JSON format. The skeleton should contain the following elements:
 
-# Generate the story seed
-def generate_seed():
+    1. **Setting**: 
+       - Describe where the story is set. Include details such as geography, key locations, culture, and the technology level.
+       - What are the initial conditions of the world?
+
+    2. **EarthShatteringEvent**:
+       - What catastrophic event occurred that altered the setting? 
+       - Describe how this event has impacted the world and the protagonist.
+
+    3. **Protagonist**: 
+       - Provide detailed information about the protagonist, including:
+         - **Description**: Physical traits, personality, background.
+         - **Motivation**: What drives the protagonist on their journey?
+         - **PowerPath**: How does the protagonist grow stronger? What events or actions will allow them to overcome adversity and develop new skills?
+
+    Provide the output strictly as valid JSON without any backticks or formatting markers.
     """
-    Generate a seed for the story (initial prompt to kickstart the story).
+
+    logging.debug("Generating story skeleton with the following prompt:")
+    logging.debug(skeleton_prompt)
+
+    # Call OpenAI API to generate the skeleton
+    skeleton_response = call_openai_api("You are a world-building storyteller.", skeleton_prompt, max_tokens=1000)
+
+    logging.debug(f"Generated story skeleton: {skeleton_response}")
+
+    # Parse the skeleton as JSON
+    try:
+        skeleton_data = json.loads(skeleton_response)
+    except json.JSONDecodeError as e:
+        logging.error(f"Error parsing skeleton JSON: {e}")
+        skeleton_data = {}
+
+    logging.debug(f"Parsed skeleton data: {json.dumps(skeleton_data, indent=2)}")
+
+    # Save the skeleton to memory
+    memory = load_memory()
+    memory["skeleton"] = skeleton_data
+    save_memory(memory)
+
+    logging.debug(f"Skeleton added to memory: {json.dumps(memory['skeleton'], indent=2)}")
+
+    return skeleton_data
+
+#Generate the start of the story based on the skeleton
+def generate_story_seed_from_skeleton(skeleton_data):
     """
-    system_prompt = "You are a storyteller."
-    user_prompt = "Generate a captivating opening scene for a fantasy adventure story."
-    story_seed = call_openai_api(system_prompt, user_prompt, max_tokens=1000)
+    Generate the opening scene based on the skeleton.
+    """
+    if not skeleton_data:
+        logging.error("Skeleton data is missing or empty.")
+        return "Error: Skeleton data is missing."
+
+    story_seed_prompt = f"""
+    The setting is: {skeleton_data.get('Setting', 'N/A')}
+    The protagonist is: {json.dumps(skeleton_data.get('Protagonist', {}), indent=2)}
+    The world has experienced the following Earth-shattering event: {skeleton_data.get('EarthShatteringEvent', 'N/A')}
+
+    Now, generate the opening scene of the story where the protagonist embarks on their journey in this setting.
+    """
+
+    logging.debug("Generating story seed with the following prompt:")
+    logging.debug(story_seed_prompt)
+
+    story_seed = call_openai_api("You are a storyteller.", story_seed_prompt, max_tokens=1000)
+
+    logging.debug(f"Generated story seed: {story_seed}")
+
+    # Add the story seed as the first chapter in memory
+    memory = load_memory()
+
+
+    logging.debug(f"Memory after adding the story seed: {json.dumps(memory, indent=2)}")
 
     return story_seed
+
+
+
 
 # Generate the next chapter
 def generate_next_chapter(previous_chapters):
@@ -243,6 +326,12 @@ def generate_next_chapter(previous_chapters):
     """
     # Load memory.json to access stored characters, plot details, themes, etc.
     memory = load_memory()
+
+    #Extract the story skeleton
+    skeleton = memory.get("skeleton", {})
+
+    # Log the extracted skeleton
+    logging.debug(f"Extracted skeleton from memory: {json.dumps(skeleton, indent=2)}")
 
     # Extract key elements from memory
     characters = memory.get("Characters", [])
@@ -264,6 +353,11 @@ def generate_next_chapter(previous_chapters):
     system_prompt = "You are a storyteller."
     
     user_prompt = f"""
+    Based on the following skeleton elements:
+    - Setting: {skeleton.get('Setting', '')}
+    - Earth-shattering Event: {skeleton.get('EarthShatteringEvent', '')}
+    - Protagonist: {json.dumps(skeleton.get('Protagonist', {}), indent=2)}
+
     Here are the previous chapters: {previous_chapters}
 
     Below is the information that has been developed so far in the story:
@@ -278,7 +372,8 @@ def generate_next_chapter(previous_chapters):
     1. The chapter should conclude naturally, without cutting off mid-sentence.
     2. If a subplot or conflict is introduced in this chapter, it should either be resolved or set up a clear transition for the next chapter.
     3. The chapter should end with a sense of closure or suspense, setting up the next chapter if necessary.
-    4. Ensure that the chapter is of appropriate length, and aim to complete it at a natural narrative break, such as the end of a scene or important dialogue.    """
+    4. Ensure that the chapter is of appropriate length, and aim to complete it at a natural narrative break, such as the end of a scene or important dialogue.
+    """
     
     # Call OpenAI API to generate the next chapter based on the memory and previous chapters
     next_chapter_text = call_openai_api(system_prompt, user_prompt, max_tokens=2000)
@@ -310,20 +405,21 @@ def show_chapter(chapter_index):
     # Get the current chapter
     chapter = chapters[chapter_index]
 
-    # Get next and previous chapter indices
-    next_chapter_index = chapter_index + 1 if chapter_index < len(chapters) - 1 else None
-    prev_chapter_index = chapter_index - 1 if chapter_index > 0 else None
+    # Get next and previous chapter indices (1-based)
+    next_chapter_index = chapter_index + 2 if chapter_index < len(chapters) - 1 else None
+    prev_chapter_index = chapter_index if chapter_index > 0 else None
 
     # Check if the current chapter is the latest one
     is_latest_chapter = chapter_index == len(chapters) - 1
 
     return render_template('chapter.html', 
                            chapter=chapter, 
-                           chapter_index=chapter_index, 
+                           chapter_index=chapter_index + 1,  # 1-based index for display
                            next_chapter_index=next_chapter_index, 
                            prev_chapter_index=prev_chapter_index,
                            total_chapters=len(chapters),
                            is_latest_chapter=is_latest_chapter)
+
 
 @app.route('/next-chapter', methods=['POST'])
 def next_chapter():
@@ -363,29 +459,21 @@ def generate_story_seed():
     """
     Generate the story seed (opening chapter) for the novel.
     """
-    # Load the memory from memory.json
-    memory = load_memory()
+    # Step 1: Generate the skeleton
+    skeleton_data = generate_skeleton()
 
-    # Generate the story seed (first chapter)
-    story_seed = generate_seed()
-
-    # Log the generated story seed for debugging
-    logging.debug(f"Story Seed: {story_seed}")
-
-    # Summarize and analyze the story seed (this will update memory.json automatically)
-    summary = summarize_chapter(story_seed)
+    # Step 2: Use the skeleton to generate the story seed (first chapter)
+    story_seed = generate_story_seed_from_skeleton(skeleton_data)
 
     # Log the generated summary for debugging
+    summary = summarize_chapter(story_seed)
     logging.debug(f"Summary: {summary}")
 
-    # Ensure that the chapter was added to memory correctly during summary analysis
-    memory = load_memory()  # Reload the memory to confirm it's updated
-    
-    # Log the updated memory to confirm it's been updated correctly
-    logging.debug(f"Updated Memory: {json.dumps(memory, indent=2)}")
+    # Redirect to the first chapter
+    memory = load_memory()
+    return redirect(url_for('show_chapter', chapter_index=len(memory["chapters"])))
 
-    # Redirect to the first chapter (chapter index 1)
-    return redirect(url_for('show_chapter', chapter_index=1))
+
 
 
 

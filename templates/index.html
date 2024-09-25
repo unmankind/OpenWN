@@ -14,7 +14,7 @@
          <ul>
         {% for chapter in chapters %}
             <li>
-                <a href="{{ url_for('show_chapter', chapter_index=loop.index0) }}">
+                <a href="{{ url_for('show_chapter', chapter_index=loop.index) }}">
                     Chapter {{ loop.index }}
                 </a>
             </li>
