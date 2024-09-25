@@ -22,13 +22,6 @@
          </ul>
 
 
-        <!-- Form to generate the next chapter -->
-        <form action="/next-chapter" method="POST">
-            <label for="previous_chapters">Previous Chapters:</label><br>
-            <textarea id="previous_chapters" name="previous_chapters" rows="10">{{ previous_chapters }}</textarea>
-            <br><br>
-            <button type="submit">Generate Next Chapter</button>
-        </form>
 
         <!-- Display the generated seed or next chapter if available -->
         {% if next_chapter %}
@@ -42,6 +35,11 @@
         <form action="/generate-seed" method="POST">
             <button type="submit">Generate Story Seed</button>
         </form>
+        <!-- Form to generate the next chapter -->
+        <form>
+            <button type="submit">Generate Next Chapter</button>
+        </form>
+
 
         <!-- Button to clear memory.json and start over -->
         <form action="/clear-memory" method="POST">
