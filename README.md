@@ -15,8 +15,8 @@ OpenWN is an AI-powered web application that generates a fantasy adventure novel
 To get started, clone this repository to your local machine:
 
 ```bash
-git clone https://github.com/unmankind/OpenW.git
-cd OpenW
+git clone https://github.com/unmankind/OpenWN.git
+cd OpenWN
 
 Setting Up Your Virtual Environment
 You should set up a Python virtual environment to isolate the project's dependencies. This can be done using the following commands:
